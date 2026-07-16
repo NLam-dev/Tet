@@ -1,0 +1,89 @@
+```html
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Learn English AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-lg bg-white p-6 rounded-3xl shadow-xl">
+        <h1 class="text-2xl font-bold text-blue-600 mb-4 text-center">AI English Tutor</h1>
+        
+        <!-- Hướng dẫn -->
+        <div id="status" class="text-center text-sm text-gray-500 mb-4 italic">
+            Nhấn nút và nói tiếng Anh với AI
+        </div>
+
+        <!-- Khung chat -->
+        <div id="chat-history" class="h-80 overflow-y-auto mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+            <div class="text-gray-700"><strong>AI:</strong> Hello! I am your English teacher. Let's practice. What is your name?</div>
+        </div>
+        
+        <!-- Nút bấm -->
+        <button id="talk-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition shadow-lg active:scale-95">
+            🎙️ Bắt đầu nói
+        </button>
+    </div>
+
+    <script>
+        // CẤU HÌNH: Thay KEY của bạn vào đây
+        const API_KEY = "DÁN_KEY_CỦA_BẠN_VÀO_ĐÂY"; 
+        
+        const chatHistory = document.getElementById('chat-history');
+        const talkBtn = document.getElementById('talk-btn');
+        const status = document.getElementById('status');
+
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+
+        talkBtn.onclick = () => {
+            recognition.start();
+            status.innerText = "🎤 Đang lắng nghe...";
+        };
+
+        recognition.onresult = async (event) => {
+            const userText = event.results[0][0].transcript;
+            appendMessage('Bạn', userText, 'text-blue-700 font-semibold');
+            
+            status.innerText = "🤖 AI đang suy nghĩ...";
+            const aiResponse = await fetchGeminiResponse(userText);
+            
+            appendMessage('AI', aiResponse, 'text-gray-800');
+            speak(aiResponse);
+            status.innerText = "Nhấn nút và nói tiếng Anh với AI";
+        };
+
+        async function fetchGeminiResponse(prompt) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Bạn là giáo viên tiếng Anh cho người mới. Hãy trả lời cực kỳ ngắn gọn, khích lệ và sửa lỗi ngữ pháp nếu có. Nội dung: " + prompt }] }]
+                    })
+                });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                return "I'm sorry, can you say that again?";
+            }
+        }
+
+        function appendMessage(sender, text, style) {
+            chatHistory.innerHTML += `<div class="${style}"><strong>${sender}:</strong> ${text}</div>`;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+    </script>
+</body>
+</html>
+
+```
